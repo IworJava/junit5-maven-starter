@@ -18,10 +18,18 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvFileSource;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
@@ -36,7 +44,11 @@ public class UserServiceTest {
     private static final User IVAN = User.of(1, "Ivan", "123");
     private static final User PETR = User.of(2, "Petr", "111");
 
-    private UserService userService;
+    private final UserService userService;
+
+    public UserServiceTest(UserService userService) {
+        this.userService = userService;
+    }
 
     @BeforeAll
     static void init() {
@@ -44,19 +56,21 @@ public class UserServiceTest {
     }
 
     @BeforeEach
-    void prepare(UserService userService) {
-        System.out.println("\nBefore each: " + this);
-        System.out.println(userService);
+    void prepare() {
+    }
 
-        this.userService = userService;
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = {"value1", "value2"})
+    void values(String value) {
+        System.out.println("Value: " + value);
     }
 
     @Test
     @Order(1)
     @DisplayName("users are empty if no-one is added")
-    void usersEmptyIfNoUserAdded(UserService userService) {
+    void usersEmptyIfNoUserAdded() {
         System.out.println("Test 1: " + this);
-        System.out.println(userService);
 
         List<User> users = userService.getAll();
 
@@ -70,9 +84,8 @@ public class UserServiceTest {
 
     @Test
     @Order(2)
-    void usersSizeIfUserAdded(UserService userService) {
+    void usersSizeIfUserAdded() {
         System.out.println("Test 2: " + this);
-        System.out.println(userService);
 
         userService.add(IVAN, PETR);
 
@@ -83,9 +96,8 @@ public class UserServiceTest {
 
     @Test
     @Order(-1)
-    void usersConvertedToMapById(UserService userService) {
+    void usersConvertedToMapById() {
         System.out.println("Test 2: " + this);
-        System.out.println(userService);
 
         userService.add(IVAN, PETR);
         Map<Integer, User> users = userService.getAllConvertedById();
@@ -120,10 +132,22 @@ public class UserServiceTest {
     @Tag("login")
     class LoginTest {
 
+        @ParameterizedTest(name = "{arguments}")
+        @MethodSource("com.iwor.junit.service.UserServiceTest#getLoginTestArguments")
+        // @CsvFileSource(resources = {"/login-test-data.csv"}, delimiter = ',', numLinesToSkip = 1)
+        // @CsvSource(value = {"Ivan,123", "Petr,111"})
+        @DisplayName("login param test")
+        void login(String username, String password, Optional<User> user) {
+            userService.add(IVAN, PETR);
+
+            Optional<User> maybeUser = userService.login(username, password);
+
+            assertThat(maybeUser).isEqualTo(user);
+        }
+
         @Test
         void loginSuccessIfUserExists() {
             System.out.println("Test 2: " + this);
-            System.out.println(userService);
 
             userService.add(IVAN);
 
@@ -137,7 +161,6 @@ public class UserServiceTest {
         @Test
         void loginFailIfPasswordIsNotCorrect() {
             System.out.println("Test 2: " + this);
-            System.out.println(userService);
 
             userService.add(IVAN);
 
@@ -149,7 +172,6 @@ public class UserServiceTest {
         @Test
         void loginFailIfUserDoesNotExist() {
             System.out.println("Test 2: " + this);
-            System.out.println(userService);
 
             userService.add(IVAN);
 
@@ -161,12 +183,20 @@ public class UserServiceTest {
         @Test
         void throwExceptionIfUsernameOrPasswordIsNull() {
             System.out.println("Test 2: " + this);
-            System.out.println(userService);
 
             assertAll(
                     () -> assertThrows(IllegalArgumentException.class, () -> userService.login(null, "dummy")),
                     () -> assertThrows(IllegalArgumentException.class, () -> userService.login("dummy", null))
             );
         }
+    }
+
+    private static Stream<Arguments> getLoginTestArguments() {
+        return Stream.of(
+                Arguments.of(IVAN.getUsername(), IVAN.getPassword(), Optional.of(IVAN)),
+                Arguments.of(PETR.getUsername(), PETR.getPassword(), Optional.of(PETR)),
+                Arguments.of("dummy", IVAN.getPassword(), Optional.empty()),
+                Arguments.of(IVAN.getUsername(), "dummy", Optional.empty())
+        );
     }
 }
