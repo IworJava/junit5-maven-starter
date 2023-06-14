@@ -1,7 +1,7 @@
 package com.iwor.junit.service;
 
 import com.iwor.junit.dto.User;
-import com.iwor.junit.paramresolver.UserServiceParamResolver;
+import com.iwor.junit.extension.UserServiceParamResolver;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.collection.IsEmptyCollection;
 import org.hamcrest.collection.IsMapContaining;
@@ -13,33 +13,38 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.CsvFileSource;
-import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Tag("fast")
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @ExtendWith(UserServiceParamResolver.class)
+@Timeout(value = 200, unit = TimeUnit.MILLISECONDS)
 public class UserServiceTest {
     private static final User IVAN = User.of(1, "Ivan", "123");
     private static final User PETR = User.of(2, "Petr", "111");
@@ -57,6 +62,7 @@ public class UserServiceTest {
 
     @BeforeEach
     void prepare() {
+        System.out.println();
     }
 
     @ParameterizedTest
@@ -156,6 +162,22 @@ public class UserServiceTest {
             assertThat(maybeUser)
                     .isPresent()
                     .contains(IVAN);
+        }
+
+        @RepeatedTest(3)
+        void checkLoginFunctionalityPerformance() {
+            System.out.println(Thread.currentThread().getName());
+
+            assertTimeout(Duration.ofMillis(200), () -> {
+                System.out.println(Thread.currentThread().getName());
+                Thread.sleep(190);
+                return userService.login("dummy", "dummy");
+            });
+
+            assertTimeoutPreemptively(
+                    Duration.ofMillis(200),
+                    () -> System.out.println(Thread.currentThread().getName())
+            );
         }
 
         @Test
