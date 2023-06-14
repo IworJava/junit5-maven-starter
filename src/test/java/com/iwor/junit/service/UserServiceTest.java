@@ -1,6 +1,7 @@
 package com.iwor.junit.service;
 
 import com.iwor.junit.dto.User;
+import com.iwor.junit.paramresolver.UserServiceParamResolver;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.collection.IsEmptyCollection;
 import org.hamcrest.collection.IsMapContaining;
@@ -16,6 +17,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.List;
 import java.util.Map;
@@ -29,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tag("fast")
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+@ExtendWith(UserServiceParamResolver.class)
 public class UserServiceTest {
     private static final User IVAN = User.of(1, "Ivan", "123");
     private static final User PETR = User.of(2, "Petr", "111");
@@ -41,16 +44,19 @@ public class UserServiceTest {
     }
 
     @BeforeEach
-    void prepare() {
+    void prepare(UserService userService) {
         System.out.println("\nBefore each: " + this);
-        userService = new UserService();
+        System.out.println(userService);
+
+        this.userService = userService;
     }
 
     @Test
     @Order(1)
     @DisplayName("users are empty if no-one is added")
-    void usersEmptyIfNoUserAdded() {
+    void usersEmptyIfNoUserAdded(UserService userService) {
         System.out.println("Test 1: " + this);
+        System.out.println(userService);
 
         List<User> users = userService.getAll();
 
@@ -64,8 +70,10 @@ public class UserServiceTest {
 
     @Test
     @Order(2)
-    void usersSizeIfUserAdded() {
+    void usersSizeIfUserAdded(UserService userService) {
         System.out.println("Test 2: " + this);
+        System.out.println(userService);
+
         userService.add(IVAN, PETR);
 
         List<User> users = userService.getAll();
@@ -75,7 +83,10 @@ public class UserServiceTest {
 
     @Test
     @Order(-1)
-    void usersConvertedToMapById() {
+    void usersConvertedToMapById(UserService userService) {
+        System.out.println("Test 2: " + this);
+        System.out.println(userService);
+
         userService.add(IVAN, PETR);
         Map<Integer, User> users = userService.getAllConvertedById();
 
@@ -96,7 +107,8 @@ public class UserServiceTest {
 
     @AfterEach
     void deleteDataFromDatabase() {
-        System.out.println("After each: " + this);
+        userService.getAll().clear();
+        // System.out.println("After each: " + this);
     }
 
     @AfterAll
@@ -110,6 +122,9 @@ public class UserServiceTest {
 
         @Test
         void loginSuccessIfUserExists() {
+            System.out.println("Test 2: " + this);
+            System.out.println(userService);
+
             userService.add(IVAN);
 
             Optional<User> maybeUser = userService.login(IVAN.getUsername(), IVAN.getPassword());
@@ -121,6 +136,9 @@ public class UserServiceTest {
 
         @Test
         void loginFailIfPasswordIsNotCorrect() {
+            System.out.println("Test 2: " + this);
+            System.out.println(userService);
+
             userService.add(IVAN);
 
             Optional<User> maybeUser = userService.login(IVAN.getUsername(), "dummy");
@@ -130,6 +148,9 @@ public class UserServiceTest {
 
         @Test
         void loginFailIfUserDoesNotExist() {
+            System.out.println("Test 2: " + this);
+            System.out.println(userService);
+
             userService.add(IVAN);
 
             Optional<User> maybeUser = userService.login("dummy", IVAN.getPassword());
@@ -139,6 +160,9 @@ public class UserServiceTest {
 
         @Test
         void throwExceptionIfUsernameOrPasswordIsNull() {
+            System.out.println("Test 2: " + this);
+            System.out.println(userService);
+
             assertAll(
                     () -> assertThrows(IllegalArgumentException.class, () -> userService.login(null, "dummy")),
                     () -> assertThrows(IllegalArgumentException.class, () -> userService.login("dummy", null))
