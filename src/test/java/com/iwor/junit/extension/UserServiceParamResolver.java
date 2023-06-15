@@ -1,5 +1,6 @@
 package com.iwor.junit.extension;
 
+import com.iwor.junit.dao.UserDao;
 import com.iwor.junit.service.UserService;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
@@ -17,6 +18,9 @@ public class UserServiceParamResolver implements ParameterResolver {
     public Object resolveParameter(ParameterContext parameterContext, ExtensionContext extensionContext) throws ParameterResolutionException {
         var store = extensionContext.getRoot().getStore(ExtensionContext.Namespace.create(UserService.class));
         System.out.println(store);
-        return store.getOrComputeIfAbsent(UserService.class);
+        return store.getOrComputeIfAbsent(
+                UserService.class,
+                key -> new UserService(new UserDao())
+        );
     }
 }

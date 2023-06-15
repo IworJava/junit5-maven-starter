@@ -1,5 +1,6 @@
 package com.iwor.junit.service;
 
+import com.iwor.junit.dao.UserDao;
 import com.iwor.junit.dto.User;
 
 import java.util.ArrayList;
@@ -13,6 +14,11 @@ import java.util.stream.Collectors;
 
 public class UserService {
     private final List<User> users = new ArrayList<>();
+    private final UserDao userDao;
+
+    public UserService(UserDao userDao) {
+        this.userDao = userDao;
+    }
 
     public List<User> getAll() {
         return users;
@@ -20,6 +26,10 @@ public class UserService {
 
     public void add(User... users) {
         this.users.addAll(Arrays.asList(users));
+    }
+
+    public boolean delete(Integer id) {
+        return userDao.deleteById(id);
     }
 
     public Optional<User> login(String username, String password) {

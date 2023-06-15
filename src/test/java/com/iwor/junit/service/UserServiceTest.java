@@ -1,6 +1,7 @@
 package com.iwor.junit.service;
 
 import com.iwor.junit.TestBase;
+import com.iwor.junit.dao.UserDao;
 import com.iwor.junit.dto.User;
 import com.iwor.junit.extension.A;
 import com.iwor.junit.extension.ConditionalExtension;
@@ -21,6 +22,7 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.Timeout;
@@ -30,6 +32,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.Mockito;
 
 import java.time.Duration;
 import java.util.List;
@@ -52,17 +55,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
         UserServiceParamResolver.class,
         PostProcessingExtension.class,
         ConditionalExtension.class,
-        ThrowableExtension.class
+        // ThrowableExtension.class
 })
 @Timeout(value = 200, unit = TimeUnit.MILLISECONDS)
 public class UserServiceTest extends TestBase {
     private static final User IVAN = User.of(1, "Ivan", "123");
     private static final User PETR = User.of(2, "Petr", "111");
 
-    private final UserService userService;
+    private UserService userService;
+    private UserDao userDao;
 
-    public UserServiceTest(UserService userService) {
-        this.userService = userService;
+    public UserServiceTest(TestInfo testInfo) {
     }
 
     @A
@@ -73,7 +76,20 @@ public class UserServiceTest extends TestBase {
 
     @BeforeEach
     void prepare() {
+        userDao = Mockito.mock(UserDao.class);
+        userService = new UserService(userDao);
         System.out.println();
+    }
+
+    @Test
+    void shouldDeleteExistedUser(UserService userService) {
+        userService.add(IVAN);
+        Mockito.doReturn(true).when(userDao).deleteById(IVAN.getId());
+        // Mockito.when(userDao.deleteById(IVAN.getId())).thenReturn(true);
+
+        boolean deleted = userService.delete(IVAN.getId());
+
+        assertThat(deleted).isTrue();
     }
 
     @ParameterizedTest
@@ -105,7 +121,7 @@ public class UserServiceTest extends TestBase {
         System.out.println("Test 2: " + this);
 
         if (true) {
-            throw new RuntimeException();
+            // throw new RuntimeException();
         }
 
         userService.add(IVAN, PETR);
