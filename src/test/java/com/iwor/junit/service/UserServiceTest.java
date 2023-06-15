@@ -1,6 +1,11 @@
 package com.iwor.junit.service;
 
+import com.iwor.junit.TestBase;
 import com.iwor.junit.dto.User;
+import com.iwor.junit.extension.A;
+import com.iwor.junit.extension.ConditionalExtension;
+import com.iwor.junit.extension.PostProcessingExtension;
+import com.iwor.junit.extension.ThrowableExtension;
 import com.iwor.junit.extension.UserServiceParamResolver;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.collection.IsEmptyCollection;
@@ -41,11 +46,16 @@ import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Tag("fast")
-@TestInstance(TestInstance.Lifecycle.PER_METHOD)
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-@ExtendWith(UserServiceParamResolver.class)
+@ExtendWith({
+        UserServiceParamResolver.class,
+        PostProcessingExtension.class,
+        ConditionalExtension.class,
+        ThrowableExtension.class
+})
 @Timeout(value = 200, unit = TimeUnit.MILLISECONDS)
-public class UserServiceTest {
+public class UserServiceTest extends TestBase {
     private static final User IVAN = User.of(1, "Ivan", "123");
     private static final User PETR = User.of(2, "Petr", "111");
 
@@ -55,6 +65,7 @@ public class UserServiceTest {
         this.userService = userService;
     }
 
+    @A
     @BeforeAll
     static void init() {
         System.out.println("\nBefore all");
@@ -93,6 +104,10 @@ public class UserServiceTest {
     void usersSizeIfUserAdded() {
         System.out.println("Test 2: " + this);
 
+        if (true) {
+            throw new RuntimeException();
+        }
+
         userService.add(IVAN, PETR);
 
         List<User> users = userService.getAll();
@@ -100,6 +115,7 @@ public class UserServiceTest {
         assertThat(users).hasSize(2);
     }
 
+    @A
     @Test
     @Order(-1)
     void usersConvertedToMapById() {
