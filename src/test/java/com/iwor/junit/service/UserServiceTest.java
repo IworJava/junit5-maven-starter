@@ -6,7 +6,6 @@ import com.iwor.junit.dto.User;
 import com.iwor.junit.extension.A;
 import com.iwor.junit.extension.ConditionalExtension;
 import com.iwor.junit.extension.PostProcessingExtension;
-import com.iwor.junit.extension.ThrowableExtension;
 import com.iwor.junit.extension.UserServiceParamResolver;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.collection.IsEmptyCollection;
@@ -32,7 +31,9 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
+import org.mockito.verification.VerificationMode;
 
 import java.time.Duration;
 import java.util.List;
@@ -76,20 +77,29 @@ public class UserServiceTest extends TestBase {
 
     @BeforeEach
     void prepare() {
-        userDao = Mockito.mock(UserDao.class);
+        // userDao = Mockito.mock(UserDao.class);
+        userDao = Mockito.spy(UserDao.class);
         userService = new UserService(userDao);
         System.out.println();
     }
 
     @Test
-    void shouldDeleteExistedUser(UserService userService) {
+    void shouldDeleteExistedUser() {
         userService.add(IVAN);
         Mockito.doReturn(true).when(userDao).deleteById(IVAN.getId());
-        // Mockito.when(userDao.deleteById(IVAN.getId())).thenReturn(true);
+        // Mockito.when(userDao.deleteById(IVAN.getId()))
+        //         .thenReturn(true)
+        //         .thenReturn(false);
 
         boolean deleted = userService.delete(IVAN.getId());
 
+        Mockito.verify(userDao, Mockito.times(1)).deleteById(IVAN.getId());
+
+        ArgumentCaptor<Integer> captor = ArgumentCaptor.forClass(Integer.class);
+        Mockito.verify(userDao, Mockito.times(1)).deleteById(captor.capture());
+
         assertThat(deleted).isTrue();
+        assertThat(captor.getValue()).isEqualTo(IVAN.getId());
     }
 
     @ParameterizedTest
